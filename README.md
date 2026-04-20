@@ -1,2 +1,2 @@
 # global-human-capital-trade-nexus
-The Human Capital-Trade Nexus: Quantifying the Alignment Between Educational Output and Export Complexity.
+The Non-Linear Dynamics of Export Complexity: A Global Panel Analysis of the Interaction Between Human Capital Accumulation and Institutional Quality (1990-...)
