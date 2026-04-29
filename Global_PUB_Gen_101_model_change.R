@@ -21,6 +21,16 @@ df_final <- Global_PUB_Gen_101_data %>%
   ) %>%
   pdata.frame(index = c("Country_Code", "Year"))
 
+# Creating the 'Change in ECI' (First Difference)
+df_final <- df_final %>%
+  group_by(Country_Code) %>%
+  arrange(Year) %>%
+  mutate(
+    d_l_eci = l_eci - lag(l_eci),      # Current minus Previous
+    lag_d_l_eci = lag(d_l_eci)         # The lag of the change
+  ) %>%
+  ungroup()
+
 #DESCRIPTIVE STATISTICS
 # 2.1 Summary Statistics Table
 disc_table <- stargazer(df_final[, c("ECI", "HC", "INST", "Openness", "CA")], 
@@ -33,16 +43,26 @@ corrplot(cor_matrix, method = "color", addCoef.col = "black", number.cex = 0.7)
 
 #ESTIMATION
 # 3.1 Model A: 1998-2023 (PWT 11.0 Clean)
-gmm_2023 <- pgmm(l_eci ~ lag(l_eci, 1) + l_hc + l_inst + hc_inst_inter + l_open + l_ca | 
-                   lag(l_eci, 2:5) + lag(l_hc, 2:5), # Lags 2 to 5 to avoid instrument proliferation
+gmm_2023 <- pgmm(d_l_eci ~ lag(d_l_eci, 1) + l_hc + l_inst + hc_inst_inter + l_open + l_ca | 
+                   lag(d_l_eci, 2:5) + lag(l_hc, 2:5),  # Lags 2 to 5 to avoid instrument proliferation
                  data = subset(df_final, as.numeric(as.character(Year)) <= 2023),
+                 index = c("Country_Code", "Year"),
                  effect = "individual", model = "twosteps", transformation = "ld", collapse = TRUE)
 
 # 3.2 Model B: 1998-2024 (Extrapolated)
-gmm_2024 <- pgmm(l_eci ~ lag(l_eci, 1) + l_hc + l_inst + hc_inst_inter + l_open + l_ca | 
-                   lag(l_eci, 2:5) + lag(l_hc, 2:5),
+gmm_2024 <- pgmm(d_l_eci ~ lag(d_l_eci, 1) + l_hc + l_inst + hc_inst_inter + l_open + l_ca | 
+                   lag(d_l_eci, 2:5) + lag(l_hc, 2:5),
                  data = df_final,
+                 index = c("Country_Code", "Year"),
                  effect = "individual", model = "twosteps", transformation = "ld", collapse = TRUE)
+
+# Fixed Effects on the CHANGE in ECI
+fe_model <- plm(d_l_eci ~ lag_d_l_eci + l_hc + l_inst + hc_inst_inter + l_open + l_ca, 
+                data = df_final, 
+                index = c("Country_Code", "Year"), 
+                model = "within")
+
+summary(fe_model)
 
 
 #POST-ESTIMATION
@@ -55,8 +75,8 @@ my_table <- stargazer(gmm_2023, gmm_2024,
                       type = "text",
                       column.labels = c("1998-2023", "1998-2024"),
                       # We skip covariate.labels here to avoid the nchar error
-                      add.lines = list(c("Sargan Test (p-val)", "0.511", "0.278"), 
-                                       c("AR(2) Test (p-val)", "0.757", "0.842")))
+                      add.lines = list(c("Sargan Test (p-val)", "0.282", "0.293"), 
+                                       c("AR(2) Test (p-val)", "0.525", "0.518")))
 
 
 
