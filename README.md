@@ -13,6 +13,6 @@ These findings offer a new framework for improving economic complexity efficient
 
 ## Access
 
-Access Paper and Citation Guide here: https://www.hctnexus.com/flagship-research
+Access Paper and Citation Guide here: https://hctnexus.eduflourish.com/flagship-research
 
 
